@@ -66,10 +66,39 @@ function VideoPlayer({ roomId }) {
       }
     });
 
+
+    socket.on('play', ({ time, playbackSpeed }) => {
+      player.seekTo(time, true);
+      player.setPlaybackRate(playbackSpeed);
+      player.playVideo();
+    });
+
+    // Listen for pause event and update player
+    socket.on('pause', ({ time }) => {
+      player.seekTo(time, true);
+      player.pauseVideo();
+    });
+
+    // Listen for mute and unmute events
+    socket.on('mute', () => {
+      player.mute();
+    });
+
+    socket.on('unmute', () => {
+      player.unMute();
+    });
+
+
+    
+
     // Clean up when the component unmounts
     return () => {
       if (intervalId) clearInterval(intervalId); // Clear any existing intervals
       socket.off('syncVideo'); // Remove the event listener for syncing
+      socket.off('play');
+      socket.off('pause');
+      socket.off('mute');
+      socket.off('unmute');
     };
     
   }, [intervalId, player, playbackSpeed, roomId]); // Dependency array to track changes
@@ -99,9 +128,41 @@ function VideoPlayer({ roomId }) {
   };
 
   // Control play, pause, and mute
-  const handlePlay = () => player?.playVideo(); // Play video
-  const handlePause = () => player?.pauseVideo(); // Pause video
-  const handleMute = () => player?.isMuted() ? player.unMute() : player.mute(); // Toggle mute/unmute
+  // const handlePlay = () => player?.playVideo(); // Play video
+
+  const handlePlay = () => {
+
+    if (player){
+      player.playVideo();
+      socket.emit('play',{time: currentTime, playbackSpeed } )
+    }
+  };
+
+
+  // const handlePause = () => player?.pauseVideo(); // Pause video
+  const handlePause = () => {
+    if (player) {
+      const currentTime = player.getCurrentTime();
+      player.pauseVideo();
+      
+      // Emit pause action to sync with other users
+      socket.emit('pause', { time: currentTime });
+    }
+  };
+  
+  // const handleMute = () => player?.isMuted() ? player.unMute() : player.mute(); // Toggle mute/unmute
+  const handleMute = () => {
+    if (player) {
+      const isMuted = player.isMuted();
+      if (isMuted) {
+        player.unMute();
+        socket.emit('unmute');  // Emit unmute action to sync
+      } else {
+        player.mute();
+        socket.emit('mute');  // Emit mute action to sync
+      }
+    }
+  };
 
   // Handle playback speed change
   const handlePlaybackSpeedChange = (e) => {

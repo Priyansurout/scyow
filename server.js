@@ -30,6 +30,38 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('syncVideo', data);
     });
 
+
+    socket.on('play', ({ time, playbackSpeed }) => {
+      
+   
+          // Broadcast to everyone except the sender
+          socket.broadcast.emit('play', { time, playbackSpeed });
+        
+      });
+
+
+    socket.on('pause', ({ time }) => {
+       
+          socket.broadcast.emit('pause', { time });
+        
+      });
+    
+      // Handle mute event
+      socket.on('mute', () => {
+ 
+   
+          socket.broadcast.emit('mute');
+        
+      });
+    
+      // Handle unmute event
+      socket.on('unmute', () => {
+ 
+
+          socket.broadcast.emit('unmute');
+        
+      });
+
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
     });
